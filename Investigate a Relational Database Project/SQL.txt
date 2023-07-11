@@ -1,0 +1,110 @@
+/* Question Set #1 - Question 1
+We want to understand more about the movies that families are watching. The following categories are considered family movies: Animation, Children, Classics, Comedy, Family and Music.
+
+Create a query that lists each movie, the film category it is classified in, and the number of times it has been rented out.
+Check Your Solution
+For this query, you will need 5 tables: Category, Film_Category, Inventory, Rental and Film. Your solution should have three columns: Film title, Category name and Count of Rentals.
+The following table header provides a preview of what the resulting table should look like if you order by category name followed by the film title.
+HINT: One way to solve this is to create a count of movies using aggregations, subqueries and Window functions. */
+
+SELECT f.title film_title, c.name category_name, COUNT(*) AS rental_count
+FROM rental r
+JOIN inventory inv
+ON r.inventory_id = inv.inventory_id
+JOIN film f
+ON inv.film_id = f.film_id
+JOIN film_category fg
+ON f.film_id = fg.film_id
+JOIN category c
+ON fg.category_id = c.category_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family','Music')
+GROUP BY 1,2
+ORDER BY 2;
+
+
+/* Question Set #1 - Question 2
+Now we need to know how the length of rental duration of these family-friendly movies compares to the duration that all movies are rented for. Can you provide a table with the movie titles and divide them into 4 levels (first_quarter, second_quarter, third_quarter, and final_quarter) based on the quartiles (25%, 50%, 75%) of the average rental duration(in the number of days) for movies across all categories? Make sure to also indicate the category that these family-friendly movies fall into.
+Check Your Solution
+The data are not very spread out to create a very fun looking solution, but you should see something like the following if you correctly split your data. You should only need the category, film_category, and film tables to answer this and the next questions. 
+HINT: One way to solve it requires the use of percentiles, Window functions, subqueries or temporary tables */
+
+
+SELECT f.title film_title,  c.name category_name, f.rental_duration rental_duration, 
+NTILE(4) OVER (ORDER BY f.rental_duration) AS standard_quartile
+FROM category c
+JOIN film_category fc
+ON c.category_id = fc.category_id
+JOIN film f
+ON fc.film_id = f.film_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music');
+
+
+
+/* Question Set #1 - Question 3
+Finally, provide a table with the family-friendly film category, each of the quartiles, and the corresponding count of movies within each combination of film category for each corresponding rental duration category. The resulting table should have three columns:
+Category ,Rental length category, Count
+Check Your Solution
+The following table header provides a preview of what your table should look like. The Count column should be sorted first by Category and then by Rental Duration category.
+HINT: One way to solve this question requires the use of Percentiles, Window functions and Case statements. */
+
+
+WITH T2 AS (
+SELECT f.title AS title, c.name AS category_name, f.rental_duration, NTILE(4) OVER (ORDER BY rental_duration) AS standrd_qurt
+FROM category c 
+JOIN film_category fg
+ON c.category_id = fg.category_id
+JOIN film f
+ON fg.film_id = f.film_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+)
+
+SELECT category_name ,standrd_qurt, COUNT(title)  
+FROM t2
+GROUP BY 1,2
+ORDER BY 1,2;
+
+-----------------------
+/* Question Set #2 - Question 1
+We want to find out how the two stores compare in their count of rental orders during every month for all the years we have data for. Write a query that returns the store ID for the store, the year and month and the number of rental orders each store has fulfilled for that month. Your table should include a column for each of the following: year, month, store ID and count of rental orders fulfilled during that month.
+Check Your Solution
+The following table header provides a preview of what your table should look like. The count of rental orders is sorted in descending order.
+HINT: One way to solve this query is the use of aggregations. */
+
+SELECT DATE_PART('month', r.rental_date) AS rental_month ,
+DATE_PART('year', r.rental_date) AS rental_year, s.store_id, COUNT(r.rental_id) AS count_rentals
+FROM rental r
+JOIN staff st
+ON r.staff_id = st.staff_id
+JOIN store s
+ON st.store_id = s.store_id
+GROUP BY 1,2,3
+ORDER BY 4 DESC;
+
+/* Question Set #2 - Question 2 and 3
+Question 2
+We would like to know who were our top 10 paying customers, how many payments they made on a monthly basis during 2007, and what was the amount of the monthly payments. Can you write a query to capture the customer name, month and year of payment, and total payment amount for each month by these top 10 paying customers?
+
+Check your Solution:
+The following table header provides a preview of what your table should look like. The results are sorted first by customer name and then for each month. As you can see, total amounts per month are listed for each customer.
+
+HINT: One way to solve is to use a subquery, limit within the subquery, and use concatenation to generate the customer name. */
+
+
+WITH t4 AS(
+SELECT CONCAT(c.first_name, ' ', c.last_name) AS fullname, c.customer_id, SUM(p.amount) AS pay_amount 
+FROM customer c
+JOIN payment p
+ON c.customer_id = p.customer_id
+GROUP BY 1,2
+ORDER BY 2 DESC
+LIMIT 10),
+t5 AS (
+SELECT date_trunc('month',payment_date) AS pay_month, fullname , COUNT(p.*) AS pay_ct_per_month,  SUM(p.amount) AS pay_amount
+FROM t4
+JOIN payment p
+ON p.customer_id = t4.customer_id
+GROUP BY 1,2
+ORDER BY 2 )
+SELECT *, 
+COALESCE(LEAD(pay_amount) OVER (PARTITION BY fullname ORDER BY pay_month) - pay_amount,0) AS difference
+FROM t5
