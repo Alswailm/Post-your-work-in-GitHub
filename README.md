@@ -25,9 +25,11 @@ You will submit your project at the end of the project lessons. Your project wil
 
 The essentials of your project submission are discussed on the page labeled as Project Submission.
 
-### Files used
-Include the files used
 
-### Credits
-It's important to give proper credit. Add links to any repo that inspired you or blogposts you consulted.
+### Second Project is "Explore US Bikeshare Data"
+### Overview:
+In this project, you will make use of Python to explore data related to bike share systems for three major cities in the United States—Chicago, New York City, and Washington. You will write code to import the data and answer interesting questions about it by computing descriptive statistics. You will also write a script that takes in raw input to create an interactive experience in the terminal to present these statistics.
 
+### Third Project is "Post Your Work on GitHub"
+### Overview:
+It's time to put what you've learned about version control and GitHub into practice! In this project, you'll be simulating a realistic workflow to refactor your previous BikeShare project using Git. Here's an overview of your tasks for this project.
